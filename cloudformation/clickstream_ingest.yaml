@@ -1,0 +1,168 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  ClickstreamKinesisStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: clickstream
+      ShardCount: 1
+
+  ProducerLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ProducerLambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+
+  ProducerLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: Producer
+      Role: !GetAtt ProducerLambdaExecutionRole.Arn
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import uuid
+          import random
+          import time
+          from datetime import datetime, timedelta
+          def generate_fake_data():
+              user_id = random.randint(0, 1000)
+              session_id = str(random.randint(1500000000000000, 1600000000000000))
+              session_start = int((datetime.now() - timedelta(days=random.randint(0, 10))).timestamp() * 1000)
+              session_size = random.randint(1, 10)
+              click_article_id = random.randint(1, 10000)
+              # Generate a click_timestamp between now and 5 days ago
+              now = datetime.now()
+              start_time = now - timedelta(days=5)
+              click_timestamp = random.randint(int(start_time.timestamp() * 1000), int(now.timestamp() * 1000))
+              click_environment = random.randint(1, 5)
+              click_deviceGroup = random.randint(1, 4)
+              click_os = random.randint(1, 30)
+              click_country = random.randint(1, 200)
+              click_region = random.randint(1, 50)
+              click_referrer_type = random.randint(1, 7)
+              data = {
+                  "user_id": user_id,
+                  "session_id": session_id,
+                  "session_start": session_start,
+                  "session_size": session_size,
+                  "click_article_id": click_article_id,
+                  "click_timestamp": click_timestamp,
+                  "click_environment": click_environment,
+                  "click_deviceGroup": click_deviceGroup,
+                  "click_os": click_os,
+                  "click_country": click_country,
+                  "click_region": click_region,
+                  "click_referrer_type": click_referrer_type
+              }
+              return data
+          def lambda_handler(event, context):
+              client = boto3.client('kinesis')
+              start_time = time.time()
+              duration = 50  # Duration in seconds
+              while time.time() - start_time < duration:
+                  data = generate_fake_data()
+                  response = client.put_record(
+                      StreamName='clickstream',
+                      Data=json.dumps(data),
+                      PartitionKey=str(uuid.uuid4())
+                  )
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('Successfully sent fake data to Kinesis for 50 seconds')
+              }
+      Timeout: 60
+
+  ProducerLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ProducerLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !GetAtt ClickstreamKinesisStream.Arn
+
+  S3CrawlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3CrawlerPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+
+  GlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: clickstream_database
+
+  ClickstreamCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Name: clickstream_crawler
+      Role: !GetAtt S3CrawlerRole.Arn
+      DatabaseName: !Ref GlueDatabase
+      Targets:
+        S3Targets:
+          - Path: s3://clickstream-ingest/clickstream/clickstream-raw/
+      Schedule:
+        ScheduleExpression: cron(0 12 * * ? *)
+
+  MetadataCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Name: metadata_crawler
+      Role: !GetAtt S3CrawlerRole.Arn
+      DatabaseName: !Ref GlueDatabase
+      Targets:
+        S3Targets:
+          - Path: s3://clickstream-ingest/metadata/
+      Schedule:
+        ScheduleExpression: cron(0 12 * * ? *)
+
+Outputs:
+  ClickstreamStreamName:
+    Value: !Ref ClickstreamKinesisStream
+    Description: The name of the Kinesis stream
+
+  ProducerLambdaFunctionName:
+    Value: !Ref ProducerLambdaFunction
+    Description: The name of the Lambda function
+
+  GlueDatabaseName:
+    Value: !Ref GlueDatabase
+    Description: The name of the Glue database
+
+  ClickstreamCrawlerName:
+    Value: !Ref ClickstreamCrawler
+    Description: The name of the Clickstream crawler
+
+  MetadataCrawlerName:
+    Value: !Ref MetadataCrawler
+    Description: The name of the Metadata crawler

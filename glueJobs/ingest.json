@@ -1,0 +1,497 @@
+{
+	"jobConfig": {
+		"name": "ingest_prod",
+		"description": "",
+		"role": "arn:aws:iam::992382832162:role/GlueRole",
+		"command": "gluestreaming",
+		"version": "4.0",
+		"runtime": null,
+		"workerType": "G.1X",
+		"numberOfWorkers": 2,
+		"maxCapacity": 2,
+		"maxRetries": 0,
+		"maxConcurrentRuns": 1,
+		"security": "none",
+		"scriptName": "ingest_prod.py",
+		"scriptLocation": "s3://aws-glue-assets-992382832162-eu-north-1/scripts/",
+		"language": "python-3",
+		"spark": true,
+		"sparkConfiguration": "standard",
+		"jobParameters": [],
+		"tags": [],
+		"jobMode": "VISUAL_MODE",
+		"createdOn": "2024-06-10T10:03:58.775Z",
+		"developerMode": false,
+		"connectionsList": [],
+		"temporaryDirectory": "s3://aws-glue-assets-992382832162-eu-north-1/temporary/",
+		"logging": true,
+		"glueHiveMetastore": true,
+		"etlAutoTuning": false,
+		"metrics": true,
+		"observabilityMetrics": true,
+		"bookmark": "job-bookmark-disable",
+		"sparkPath": "s3://aws-glue-assets-992382832162-eu-north-1/sparkHistoryLogs/",
+		"maintenanceWindow": null,
+		"pythonPath": ""
+	},
+	"dag": {
+		"node-1717983920915": {
+			"nodeId": "node-1717983920915",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [
+				"node-1717980034102"
+			],
+			"name": "Amazon S3",
+			"generatedNodeName": "AmazonS3_node1717983920915",
+			"classification": "DataSink",
+			"type": "S3",
+			"streamingBatchInterval": 100,
+			"format": "glueparquet",
+			"compression": "uncompressed",
+			"path": "s3://clickstream-ingest/clickstream/clickstream-raw/",
+			"partitionKeys": [],
+			"schemaChangePolicy": {
+				"enableUpdateCatalog": false,
+				"updateBehavior": null,
+				"database": null,
+				"table": null
+			},
+			"updateCatalogOptions": "none",
+			"autoDataQuality": {
+				"isEnabled": false,
+				"evaluationContext": null
+			},
+			"calculatedType": "",
+			"codeGenVersion": 2
+		},
+		"node-1717978942275": {
+			"nodeId": "node-1717978942275",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [
+				"node-1717978845939"
+			],
+			"name": "Change Schema",
+			"generatedNodeName": "ChangeSchema_node1717978942275",
+			"classification": "Transform",
+			"type": "ApplyMapping",
+			"mapping": [
+				{
+					"toKey": "id_env",
+					"fromPath": [
+						"id"
+					],
+					"toType": "int",
+					"fromType": "long",
+					"dropped": false,
+					"children": null
+				},
+				{
+					"toKey": "environment",
+					"fromPath": [
+						"environment"
+					],
+					"toType": "string",
+					"fromType": "string",
+					"dropped": false,
+					"children": null
+				}
+			],
+			"parentsValid": true,
+			"calculatedType": "",
+			"codeGenVersion": 2
+		},
+		"node-1717980000660": {
+			"nodeId": "node-1717980000660",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [],
+			"name": "Device Group",
+			"generatedNodeName": "DeviceGroup_node1717980000660",
+			"classification": "DataSource",
+			"type": "DBB",
+			"isCatalog": true,
+			"database": "clickstream_database",
+			"table": "device_group_csv",
+			"pitrEnabled": false,
+			"additionalOptions": null,
+			"calculatedType": "",
+			"ddbConnectorType": "catalog",
+			"codeGenVersion": 2
+		},
+		"node-1717978845939": {
+			"nodeId": "node-1717978845939",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [],
+			"name": "Environment",
+			"generatedNodeName": "Environment_node1717978845939",
+			"classification": "DataSource",
+			"type": "DBB",
+			"isCatalog": true,
+			"database": "clickstream_database",
+			"table": "environment_csv",
+			"pitrEnabled": false,
+			"additionalOptions": null,
+			"calculatedType": "",
+			"ddbConnectorType": "catalog",
+			"codeGenVersion": 2
+		},
+		"node-1717971696520": {
+			"nodeId": "node-1717971696520",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [],
+			"name": "Amazon Kinesis",
+			"generatedNodeName": "AmazonKinesis_node1717971696520",
+			"classification": "DataSource",
+			"type": "Kinesis",
+			"isCatalog": false,
+			"windowSize": 100,
+			"detectSchema": true,
+			"streamingOptions": {
+				"endpointUrl": null,
+				"streamName": null,
+				"classification": "json",
+				"delimiter": null,
+				"startingPosition": "earliest",
+				"startingTimestamp": null,
+				"maxFetchTimeInMs": null,
+				"maxFetchRecordsPerShard": null,
+				"maxRecordPerRead": null,
+				"addIdleTimeBetweenReads": null,
+				"idleTimeBetweenReadsInMs": null,
+				"describeShardInterval": null,
+				"numRetries": null,
+				"retryIntervalMs": null,
+				"maxRetryIntervalMs": null,
+				"avoidEmptyBatches": null,
+				"streamARN": "arn:aws:kinesis:eu-north-1:992382832162:stream/clickstream",
+				"awsSTSRoleARN": null,
+				"awsSTSSessionName": null,
+				"addRecordTimestamp": null,
+				"fanoutConsumerARN": null,
+				"emitConsumerLagMetrics": null
+			},
+			"isKinesisSameAccount": true,
+			"nameToUse": "dataframe_AmazonKinesis_node1717971696520",
+			"calculatedType": "",
+			"codeGenVersion": 2
+		},
+		"node-1717980023422": {
+			"nodeId": "node-1717980023422",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [
+				"node-1717980000660"
+			],
+			"name": "Change Schema",
+			"generatedNodeName": "ChangeSchema_node1717980023422",
+			"classification": "Transform",
+			"type": "ApplyMapping",
+			"mapping": [
+				{
+					"toKey": "id_device",
+					"fromPath": [
+						"id"
+					],
+					"toType": "int",
+					"fromType": "long",
+					"dropped": false,
+					"children": null
+				},
+				{
+					"toKey": "device_group",
+					"fromPath": [
+						"device group"
+					],
+					"toType": "string",
+					"fromType": "string",
+					"dropped": false,
+					"children": null
+				}
+			],
+			"parentsValid": true,
+			"calculatedType": "",
+			"codeGenVersion": 2
+		},
+		"node-1717979845151": {
+			"nodeId": "node-1717979845151",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [],
+			"name": "Operational System",
+			"generatedNodeName": "OperationalSystem_node1717979845151",
+			"classification": "DataSource",
+			"type": "DBB",
+			"isCatalog": true,
+			"database": "clickstream_database",
+			"table": "operational_system_csv",
+			"pitrEnabled": false,
+			"additionalOptions": null,
+			"calculatedType": "",
+			"ddbConnectorType": "catalog",
+			"codeGenVersion": 2
+		},
+		"node-1717978178601": {
+			"nodeId": "node-1717978178601",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [
+				"node-1717977979097"
+			],
+			"name": "Change Schema",
+			"generatedNodeName": "ChangeSchema_node1717978178601",
+			"classification": "Transform",
+			"type": "ApplyMapping",
+			"mapping": [
+				{
+					"toKey": "article_id",
+					"fromPath": [
+						"article_id"
+					],
+					"toType": "int",
+					"fromType": "long",
+					"dropped": false,
+					"children": null
+				},
+				{
+					"toKey": "category_id",
+					"fromPath": [
+						"category_id"
+					],
+					"toType": "string",
+					"fromType": "long",
+					"dropped": false,
+					"children": null
+				},
+				{
+					"toKey": "created_at_ts",
+					"fromPath": [
+						"created_at_ts"
+					],
+					"toType": "string",
+					"fromType": "string",
+					"dropped": false,
+					"children": null
+				},
+				{
+					"toKey": "publisher_id",
+					"fromPath": [
+						"publisher_id"
+					],
+					"toType": "long",
+					"fromType": "long",
+					"dropped": false,
+					"children": null
+				},
+				{
+					"toKey": "words_count",
+					"fromPath": [
+						"words_count"
+					],
+					"toType": "long",
+					"fromType": "long",
+					"dropped": false,
+					"children": null
+				}
+			],
+			"parentsValid": true,
+			"calculatedType": "",
+			"codeGenVersion": 2
+		},
+		"node-1717979883788": {
+			"nodeId": "node-1717979883788",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [
+				"node-1717979867971",
+				"node-1717979003646"
+			],
+			"name": "Join",
+			"generatedNodeName": "Join_node1717979883788",
+			"classification": "Transform",
+			"type": "Join",
+			"joinType": "equijoin",
+			"columns": [
+				{
+					"from": "node-1717979867971",
+					"keys": [
+						"id_os"
+					]
+				},
+				{
+					"from": "node-1717979003646",
+					"keys": [
+						"click_os"
+					]
+				}
+			],
+			"columnConditions": [
+				"="
+			],
+			"parentsValid": true,
+			"calculatedType": "",
+			"codeGenVersion": 2
+		},
+		"node-1717977979097": {
+			"nodeId": "node-1717977979097",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [],
+			"name": "Articles Metadata",
+			"generatedNodeName": "ArticlesMetadata_node1717977979097",
+			"classification": "DataSource",
+			"type": "DBB",
+			"isCatalog": true,
+			"database": "clickstream_database",
+			"table": "articles_metadata_csv",
+			"pitrEnabled": false,
+			"additionalOptions": null,
+			"calculatedType": "",
+			"ddbConnectorType": "catalog",
+			"codeGenVersion": 2
+		},
+		"node-1717979867971": {
+			"nodeId": "node-1717979867971",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [
+				"node-1717979845151"
+			],
+			"name": "Change Schema",
+			"generatedNodeName": "ChangeSchema_node1717979867971",
+			"classification": "Transform",
+			"type": "ApplyMapping",
+			"mapping": [
+				{
+					"toKey": "id_os",
+					"fromPath": [
+						"id"
+					],
+					"toType": "int",
+					"fromType": "long",
+					"dropped": false,
+					"children": null
+				},
+				{
+					"toKey": "operational_system",
+					"fromPath": [
+						"operational system"
+					],
+					"toType": "string",
+					"fromType": "string",
+					"dropped": false,
+					"children": null
+				}
+			],
+			"parentsValid": true,
+			"calculatedType": "",
+			"codeGenVersion": 2
+		},
+		"node-1717980034102": {
+			"nodeId": "node-1717980034102",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [
+				"node-1717980023422",
+				"node-1717979883788"
+			],
+			"name": "Join",
+			"generatedNodeName": "Join_node1717980034102",
+			"classification": "Transform",
+			"type": "Join",
+			"joinType": "right",
+			"columns": [
+				{
+					"from": "node-1717980023422",
+					"keys": [
+						"id_device"
+					]
+				},
+				{
+					"from": "node-1717979883788",
+					"keys": [
+						"click_devicegroup"
+					]
+				}
+			],
+			"columnConditions": [
+				"="
+			],
+			"parentsValid": true,
+			"calculatedType": "",
+			"codeGenVersion": 2
+		},
+		"node-1717979003646": {
+			"nodeId": "node-1717979003646",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [
+				"node-1717978942275",
+				"node-1717976695896"
+			],
+			"name": "Join",
+			"generatedNodeName": "Join_node1717979003646",
+			"classification": "Transform",
+			"type": "Join",
+			"joinType": "equijoin",
+			"columns": [
+				{
+					"from": "node-1717978942275",
+					"keys": [
+						"id_env"
+					]
+				},
+				{
+					"from": "node-1717976695896",
+					"keys": [
+						"click_environment"
+					]
+				}
+			],
+			"columnConditions": [
+				"="
+			],
+			"parentsValid": true,
+			"calculatedType": "",
+			"codeGenVersion": 2
+		},
+		"node-1717976695896": {
+			"nodeId": "node-1717976695896",
+			"dataPreview": false,
+			"previewAmount": 0,
+			"inputs": [
+				"node-1717971696520",
+				"node-1717978178601"
+			],
+			"name": "Join",
+			"generatedNodeName": "Join_node1717976695896",
+			"classification": "Transform",
+			"type": "Join",
+			"joinType": "equijoin",
+			"columns": [
+				{
+					"from": "node-1717971696520",
+					"keys": [
+						"click_article_id"
+					]
+				},
+				{
+					"from": "node-1717978178601",
+					"keys": [
+						"article_id"
+					]
+				}
+			],
+			"columnConditions": [
+				"="
+			],
+			"parentsValid": true,
+			"calculatedType": "",
+			"codeGenVersion": 2
+		}
+	},
+	"hasBeenSaved": false
+}
